@@ -1,0 +1,33 @@
+#!/usr/bin/perl
+use LWP::UserAgent;
+use LWP::Protocol::socks;
+for(@ARGV) {
+    if($_ eq '-h' or $_ eq '--help') {
+        die "-h for help\n-t [seconds] for timeout of checks. Default 5 seconds\n-v for verbose output\n";
+    }
+    if($_ eq '-t') {
+        shift @ARGV; #get -t out of @ARGV
+        $timeout = shift @ARGV; #Get the number after it
+    }
+    if($_ eq '-v') {
+        shift @ARGV; #Get -v out of @ARGV
+        $verbose = 1;
+    }
+}
+$timeout = 5 unless(defined($timeout));
+my $ua = LWP::UserAgent->new;
+$ua->timeout($timeout);
+my $google = 'https://www.google.com';
+while(<STDIN>) { #Each input line looks like 1.1.1.1:1111
+    chomp($_);
+    $ua->proxy(['https', 'http', 'ftp'], "socks://$_");
+    $site = $ua->get($google);
+    print "Checking $_\n" if($verbose);
+    sleep($timeout);
+    if($site->is_success) {
+        print "$_\n";
+        print "Success\n" if($verbose);
+    } else {
+        print "Failed\n" if($verbose);
+    }
+}
